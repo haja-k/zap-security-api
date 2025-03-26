@@ -20,4 +20,4 @@ sleep 5
 
 # Show ZAP container logs with follow
 echo "Showing ZAP container logs (Ctrl+C to exit)..."
-docker logs zap-flask -f
+docker logs zap-scanner -f
