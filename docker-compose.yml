@@ -2,13 +2,17 @@ version: "3.8"
 services:
   zap:
     container_name: zap-scanner
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "8088:8088"  # Expose ZAP API
-    cap_add:  # Add network privileges
+      - "8088:8088"
+    volumes:
+      - ./zap-server/reports:/zap/reports
+    cap_add:
       - NET_RAW
       - NET_ADMIN
-    restart: unless-stopped
+    restart: always
 
   zap-service:
     container_name: zap-flask
@@ -16,7 +20,13 @@ services:
       context: .
       dockerfile: Dockerfile.flask
     ports:
-      - "5000:5000"  # Expose Flask
+      - "5000:5000"
+    volumes:
+      - ./zap-server/reports:/zap/reports
     depends_on:
       - zap
-    restart: unless-stopped
+    restart: always
+
+volumes:
+  zap-reports:
+    driver: local
