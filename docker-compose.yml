@@ -1,0 +1,34 @@
+version: "3.8"
+services:
+  zap:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./reports:/zap/reports
+    networks:
+      - zap-net
+    restart: always
+
+  zap-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.flask
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./reports:/zap/reports
+    networks:
+      - zap-net
+    restart: always
+    depends_on:
+      - zap
+
+networks:
+  zap-net:
+    driver: bridge
+
+volumes:
+  reports:

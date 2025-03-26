@@ -1,0 +1,7 @@
+FROM python:3.9-slim
+RUN pip install flask requests
+RUN mkdir -p /app 
+WORKDIR /app
+COPY zap_service.py /app/zap_service.py
+RUN mkdir -p /zap/reports && chmod 777 /zap/reports
+CMD ["python", "zap_service.py"]
