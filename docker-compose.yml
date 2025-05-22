@@ -1,0 +1,44 @@
+version: "3.8"
+services:
+  zap:
+    container_name: zap-scanner
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8088"
+    volumes:
+      - ./zap-server/reports:/zap/reports
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2G
+
+  zap-service:
+    container_name: zap-flask
+    build:
+      context: .
+      dockerfile: Dockerfile.flask
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./zap-server/reports:/zap/reports
+    depends_on:
+      zap:
+        condition: service_healthy  # Wait for ZAP to be healthy
+    restart: always
+
+volumes:
+  zap-reports:
+    driver: local
