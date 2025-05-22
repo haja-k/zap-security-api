@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file, abort
 import requests
 import time
 import urllib.parse
@@ -31,7 +31,7 @@ def prepare_target(target_url):
         requests.get(f"{ZAP_URL}/JSON/context/action/newContext/?contextName=scan_context&apikey={API_KEY}")
         
         # 2. Include target
-        include_url = f"{ZAP_URL}/JSON/context/action/includeInContext/?contextName=scan_context&regex={urllib.parse.quote(target_url)}.*&apikey={API_KEY}"
+        include_url = f"{ZAP_URL}/JSON/context/action/includeInContext/?contextName=scan_context®ex={urllib.parse.quote(target_url)}.*&apikey={API_KEY}"
         requests.get(include_url)
         
         # 3. Run spider
@@ -96,6 +96,14 @@ def scan():
         return jsonify(result), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/download-report', methods=['GET'])
+def download_report():
+    """Endpoint to download the ZAP report file"""
+    report_path = request.args.get('report_path')
+    if not report_path or not os.path.exists(report_path):
+        abort(404, description="Report file not found")
+    return send_file(report_path, as_attachment=True)
 
 if __name__ == "__main__":
     setup_environment()

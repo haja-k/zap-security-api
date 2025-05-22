@@ -6,7 +6,7 @@ This repo is to store API &deployment codes for ZAP scan to be deployed in a cen
 
 ### Start scan (report will be auto-saved)
 ```
-curl "http://172.26.93.12:5000/scan?url=http://172.26.92.177:8086/"
+curl "http://172.26.92.185:5000/scan?url=https://aivie-tnt.sains.com.my/apps"
 ```
 
 ### Response will include:
