@@ -8,8 +8,9 @@ RUN apt-get update && \
 # Install Python packages
 RUN pip install --no-cache-dir flask requests
 
-RUN mkdir -p /app 
+# Set up app directory
 WORKDIR /app
 COPY zap_service.py /app/zap_service.py
 RUN mkdir -p /zap/reports && chmod 777 /zap/reports
+
 CMD ["python", "zap_service.py"]

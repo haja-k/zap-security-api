@@ -35,7 +35,8 @@ services:
     volumes:
       - ./zap-server/reports:/zap/reports
     depends_on:
-      - zap
+      zap:
+        condition: service_healthy  # Wait for ZAP to be healthy
     restart: always
 
 volumes:
