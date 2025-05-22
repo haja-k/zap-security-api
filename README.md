@@ -23,7 +23,7 @@ This repository contains the API and deployment code for running ZAP (Zed Attack
 ## 🛠️ How to Run the Containers
 ### Prerequisites
 - Docker and Docker Compose installed on the host machine.
-- Access to the target server (e.g., `172.26.92.185`).
+- Access to the target server (e.g., `172.26.88.145`).
 
 1. **Build and Start the Containers**
    Use Docker Compose to build and run the `zap` (ZAP scanner) and `zap-service` (Flask API) containers:
@@ -54,11 +54,11 @@ Initiate a ZAP scan on a target URL. The report will be automatically saved to `
 
 #### Command
 ```bash
-curl "http://172.26.92.185:5000/scan?url=https://aivie-tnt.sains.com.my/apps"
+curl "http://<ip-address>:5000/scan?url=https://<application-url>"
 ```
 
 #### Notes
-- Replace `https://aivie-tnt.sains.com.my/apps` with your target URL.
+- Replace `<application-url>` with your target URL.
 - Ensure the target URL starts with `http://` or `https://`.
 
 ## 📄 Sample Response
@@ -69,8 +69,8 @@ Upon successful completion of the scan, the `/scan` endpoint returns a JSON resp
 ```json
 {
   "status": "completed",
-  "report_path": "/zap/reports/zap_scan_https_aivie-tnt.sains.com.my_apps_20250522_1527.html",
-  "target": "https://aivie-tnt.sains.com.my/apps"
+  "report_path": "/zap/reports/zap_scan_20250522_1527.html",
+  "target": "<application-url>"
 }
 ```
 
@@ -87,17 +87,17 @@ Upon successful completion of the scan, the `/scan` endpoint returns a JSON resp
 - **Endpoint**: `/scan`
 - **Method**: `GET`
 - **Parameters**:
-  - `url` (required): The target URL to scan (e.g., `https://aivie-tnt.sains.com.my/apps`).
+  - `url` (required): The target URL to scan (e.g., `https://www.google.com`).
 - **Example**:
   ```bash
-  curl "http://172.26.92.185:5000/scan?url=https://aivie-tnt.sains.com.my/apps"
+  curl "http://<ip-address>:5000/scan?url=<application-url>"
   ```
 - **Response**:
   ```json
   {
     "status": "completed",
-    "report_path": "/zap/reports/zap_scan_https_aivie-tnt.sains.com.my_apps_20250522_1527.html",
-    "target": "https://aivie-tnt.sains.com.my/apps"
+    "report_path": "/zap/reports/zap_scan_20250522_1527.html",
+    "target": "<application-url>"
   }
   ```
 
@@ -108,7 +108,7 @@ Upon successful completion of the scan, the `/scan` endpoint returns a JSON resp
   - `report_path` (required): The path to the report file (from the `/scan` response).
 - **Example**:
   ```bash
-  curl "http://172.26.92.185:5000/download-report?report_path=/zap/reports/zap_scan_https_aivie-tnt.sains.com.my_apps_20250522_1527.html" --output report.html
+  curl "http://<ip-address>:5000/download-report?report_path=/zap/reports/zap_scan_20250522_1527.html" --output report.html
   ```
 - **Response**: Downloads the HTML report file.
 
@@ -117,7 +117,7 @@ Upon successful completion of the scan, the `/scan` endpoint returns a JSON resp
 - **Method**: `GET`
 - **Example**:
   ```bash
-  curl "http://172.26.92.185:8088/JSON/core/view/version/?apikey=zapp1ngk3y"
+  curl "http://<ip-address>:8088/JSON/core/view/version/?apikey=zapp1ngk3y"
   ```
 - **Response**:
   ```json
