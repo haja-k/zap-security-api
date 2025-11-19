@@ -1,142 +1,177 @@
-# 🎞️ At a glance 
-This repository contains the API and deployment code for running ZAP (Zed Attack Proxy) scans on a centralized server. It provides a Flask-based service to initiate scans, generate reports, and download results, all containerized using Docker.
+## ZAP Security API
 
+Flask + Docker service for running OWASP ZAP security scans on demand via a simple REST API. Designed for centralized, repeatable application security testing in CI/CD or ad-hoc use.
 
-## 📝 Features
-- **Automated ZAP Scanning**: Perform security scans on target URLs using OWASP ZAP.
-- **RESTful API**: Initiate scans and download reports via simple HTTP endpoints.
-- **Containerized Deployment**: Run the ZAP scanner and Flask service in Docker containers for easy deployment.
-- **HTTPS Support**: Handles HTTPS targets with proper proxy configuration.
-- **Detailed Logging**: Comprehensive logs for debugging scan failures.
-- **Report Generation**: Automatically saves scan reports in HTML format to a shared volume.
-- **Retry Mechanism**: Retries spider initiation to handle transient failures.
+---
 
-## 📂 Project Structure
+## Features
 
-- `zap_service.py`: Flask API for initiating scans and downloading reports.
-- `zap_scan.py`: Standalone script for running ZAP scans (alternative to the API).
-- `Dockerfile`: Dockerfile for the ZAP scanner container.
-- `Dockerfile.flask`: Dockerfile for the Flask API container.
-- `docker-compose.yml`: Docker Compose configuration for running both containers.
-- `zap-server/reports/`: Host directory for storing ZAP reports.
+- **OWASP ZAP automation**: Trigger active scans against any HTTP(S) target.
+- **REST API**: Start scans and download HTML reports via simple endpoints.
+- **Containerized deployment**: ZAP engine and Flask API packaged in Docker, wired together with `docker-compose`.
+- **Report management**: HTML reports automatically written to a shared host volume.
+- **Resilient scanning**: Basic retry logic and detailed logging for troubleshooting.
 
-## 🛠️ How to Run the Containers
+---
+
+## Project Structure
+
+- `zap_service.py` – Flask API exposing scan and report download endpoints.
+- `zap_scan.py` – Standalone ZAP scan script (no API required).
+- `Dockerfile` – ZAP scanner image.
+- `Dockerfile.flask` – Flask API image.
+- `docker-compose.yml` – Orchestrates ZAP + Flask containers and shared volume.
+- `zap-server/reports/` – Host directory where HTML reports are stored.
+
+---
+
+## Getting Started
+
 ### Prerequisites
-- Docker and Docker Compose installed on the host machine.
-- Access to the target server (e.g., `172.26.88.145`).
 
-1. **Build and Start the Containers**
-   Use Docker Compose to build and run the `zap` (ZAP scanner) and `zap-service` (Flask API) containers:
-   ```bash
-   docker-compose up -d --build
-   ```
-   - This starts:
-     - `zap-scanner`: ZAP container on port `8088`.
-     - `zap-flask`: Flask API container on port `5000`.
+- Docker
+- Docker Compose
+- Network access from the Docker host to your target application(s)
 
-2. **Verify Containers Are Running**
-   ```bash
-   docker ps
-   ```
-   You should see `zap-scanner` and `zap-flask` containers running.
+### 1. Configure environment
 
-3. **Check Logs (Optional)**
-   Monitor logs to ensure the containers start correctly:
-   ```bash
-   docker logs zap-scanner
-   docker logs zap-flask
-   ```
+Copy `.env.example` to `.env` and update the values as needed:
 
-## 🌐 Test Endpoint
-
-### Start a Scan
-Initiate a ZAP scan on a target URL. The report will be automatically saved to `/zap/reports/` inside the container (mapped to `./zap-server/reports/` on the host).
-
-#### Command
 ```bash
-curl "http://<ip-address>:5000/scan?url=https://<application-url>"
+cp .env.example .env
 ```
 
-#### Notes
-- Replace `<application-url>` with your target URL.
-- Ensure the target URL starts with `http://` or `https://`.
+Edit `.env` to set your ZAP API key, timeouts, and other configuration.
 
-## 📄 Sample Response
+### 2. Build and start the stack
 
-Upon successful completion of the scan, the `/scan` endpoint returns a JSON response with the status, report path, and target URL.
+From the repository root:
 
-### Example Response
+```bash
+docker-compose up -d --build
+```
+
+This will start:
+
+- `zap-scanner` (OWASP ZAP) on `8088`
+- `zap-flask` (Flask API) on `5000`
+
+Verify containers:
+
+```bash
+docker ps
+```
+
+(Optional) Check logs:
+
+```bash
+docker logs zap-scanner
+docker logs zap-flask
+```
+
+---
+
+## Usage
+
+### 1. Start a scan
+
+Trigger a scan of a target URL. The HTML report will be written to `/zap/reports/` in the container (mapped to `./zap-server/reports/` on the host).
+
+```bash
+curl "http://<host-ip>:5000/scan?url=https://<application-url>"
+```
+
+- Replace `<host-ip>` with the machine running Docker.
+- Replace `<application-url>` with the target (including `http://` or `https://`).
+
+**Sample response:**
+
 ```json
 {
   "status": "completed",
   "report_path": "/zap/reports/zap_scan_20250522_1527.html",
-  "target": "<application-url>"
+  "target": "https://example.com"
 }
 ```
 
-#### Explanation
-- `status`: Indicates the scan result (`completed` or `error`).
-- `report_path`: Path to the generated HTML report inside the container.
-- `target`: The URL that was scanned.
+### 2. Download a report
+
+Use the `report_path` returned from `/scan`:
+
+```bash
+curl "http://<host-ip>:5000/download-report?report_path=/zap/reports/zap_scan_20250522_1527.html" --output report.html
+```
+
+This saves the HTML report as `report.html` locally.
+
+### 3. Check ZAP is healthy (optional)
+
+```bash
+curl "http://<host-ip>:8088/JSON/core/view/version/?apikey=zapp1ngk3y"
+```
+
+**Expected response:**
+
+```json
+{"version":"2.12.0"}
+```
 
 ---
 
-## 🔗 List of APIs
+## API Reference
 
-### 1. Start a Scan
-- **Endpoint**: `/scan`
-- **Method**: `GET`
-- **Parameters**:
-  - `url` (required): The target URL to scan (e.g., `https://www.google.com`).
-- **Example**:
-  ```bash
-  curl "http://<ip-address>:5000/scan?url=<application-url>"
-  ```
-- **Response**:
+### `GET /scan`
+
+- **Description**: Starts a ZAP scan for the given URL.
+- **Query parameters**:
+  - `url` (required) – Target URL, e.g. `https://www.google.com`
+- **Response** (`200`):
+
   ```json
   {
-    "status": "completed",
-    "report_path": "/zap/reports/zap_scan_20250522_1527.html",
+    "status": "completed" | "error",
+    "report_path": "/zap/reports/zap_scan_YYYYMMDD_HHMM.html",
     "target": "<application-url>"
   }
   ```
 
-### 2. Download a Report
-- **Endpoint**: `/download-report`
-- **Method**: `GET`
-- **Parameters**:
-  - `report_path` (required): The path to the report file (from the `/scan` response).
-- **Example**:
-  ```bash
-  curl "http://<ip-address>:5000/download-report?report_path=/zap/reports/zap_scan_20250522_1527.html" --output report.html
-  ```
-- **Response**: Downloads the HTML report file.
+### `GET /download-report`
 
-### 3. Test ZAP API (Optional)
-- **Endpoint**: ZAP’s API endpoint to check its version.
-- **Method**: `GET`
-- **Example**:
-  ```bash
-  curl "http://<ip-address>:8088/JSON/core/view/version/?apikey=zapp1ngk3y"
-  ```
-- **Response**:
-  ```json
-  {"version":"2.12.0"}
-  ```
+- **Description**: Downloads a previously generated HTML report.
+- **Query parameters**:
+  - `report_path` (required) – Path returned from `/scan`
+- **Response**: HTML file (use `--output` with `curl` to save it).
 
-## ⚠️ Troubleshooting
+---
 
-- **Scan Fails with "Target preparation failed"**:
-  - Check the logs for details:
+## Troubleshooting
+
+- **Scan fails or times out**
+  - Check logs:
+
     ```bash
     docker logs zap-flask
     docker logs zap-scanner
     ```
-  - Ensure the target URL is accessible and doesn’t require authentication.
-  - If authentication is needed, modify `zap_service.py` to include credentials (see ZAP documentation).
 
-- **ZAP State Issues**:
-  - Restart the ZAP container to clear its state:
+  - Confirm the target is reachable from the Docker host.
+  - If the app requires authentication or custom headers, extend `zap_service.py` / `zap_scan.py` with the relevant ZAP authentication configuration.
+
+- **ZAP stuck / bad state**
+  - Restart the ZAP container:
+
     ```bash
     docker restart zap-scanner
     ```
+
+---
+
+## Why This Project
+
+This project demonstrates:
+
+- **Applied AppSec**: Automating OWASP ZAP for repeatable security testing.
+- **API design**: A minimal REST interface for orchestrating security tools.
+- **Containerization**: Clean separation between scanner and control plane using Docker and `docker-compose`.
+
+It can be used as a starting point for integrating automated security scanning into CI/CD pipelines or building an internal "scan as a service" platform.

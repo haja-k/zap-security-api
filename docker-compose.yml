@@ -6,12 +6,16 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8088:8088"
+      - "${ZAP_PORT:-8088}:8088"
     volumes:
       - ./zap-server/reports:/zap/reports
     cap_add:
       - NET_RAW
       - NET_ADMIN
+    env_file:
+      - .env
+    environment:
+      - ZAP_API_KEY=${ZAP_API_KEY}
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8088"]
@@ -22,8 +26,10 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "1.0"
-          memory: 2G
+          cpus: "${ZAP_CPU_LIMIT:-1.0}"
+          memory: ${ZAP_MEMORY_LIMIT:-2G}
+    networks:
+      - zap-network
 
   zap-service:
     container_name: zap-flask
@@ -31,13 +37,29 @@ services:
       context: .
       dockerfile: Dockerfile.flask
     ports:
-      - "5000:5000"
+      - "${FLASK_PORT:-5000}:5000"
     volumes:
       - ./zap-server/reports:/zap/reports
+    env_file:
+      - .env
+    environment:
+      - ZAP_URL=${ZAP_URL:-http://zap:8088}
+      - ZAP_API_KEY=${ZAP_API_KEY}
+      - REPORT_DIR=${REPORT_DIR:-/zap/reports}
+      - SCAN_TIMEOUT=${SCAN_TIMEOUT}
+      - SPIDER_TIMEOUT=${SPIDER_TIMEOUT}
+      - SPIDER_RETRIES=${SPIDER_RETRIES}
+      - DEFAULT_SCAN_MODE=${DEFAULT_SCAN_MODE}
     depends_on:
       zap:
         condition: service_healthy  # Wait for ZAP to be healthy
     restart: always
+    networks:
+      - zap-network
+
+networks:
+  zap-network:
+    driver: bridge
 
 volumes:
   zap-reports:
